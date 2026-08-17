@@ -1,16 +1,14 @@
-/**
- * Background worker entrypoint.
- *
- * In production this process consumes PublishJob rows from PostgreSQL/Redis,
- * renders media with FFmpeg, and calls the official platform adapters.
- */
+import { processDueJobs } from "./process-jobs";
 
 const intervalMs = Number(process.env.WORKER_INTERVAL_MS ?? 30_000);
 
 async function tick() {
-  console.log(`[worker] heartbeat ${new Date().toISOString()}`);
-  // TODO: claim due PublishJob records atomically, process them, retry failures,
-  // and write AuditLog entries. Keep this process separate from the web server.
+  try {
+    const count = await processDueJobs();
+    console.log(`[worker] processed=${count} at ${new Date().toISOString()}`);
+  } catch (error) {
+    console.error("[worker] tick failed", error);
+  }
 }
 
 console.log("[worker] AutoPilot Social worker started");
