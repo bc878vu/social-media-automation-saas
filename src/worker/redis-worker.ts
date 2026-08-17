@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import IORedis from "ioredis";
 import { prisma } from "../lib/prisma";
-import { publishTo } from "../lib/live-publish";
+import { livePublish } from "../lib/live-publish";
 
 export function startRedisWorker() {
   if (!process.env.REDIS_URL) return null;
@@ -11,7 +11,7 @@ export function startRedisWorker() {
     if (!publishJob || publishJob.status === "PUBLISHED") return;
     await prisma.publishJob.update({ where: { id: publishJob.id }, data: { status: "PROCESSING", attempts: { increment: 1 } } });
     try {
-      const result = await publishTo(publishJob.platform, { title: publishJob.content.title, caption: publishJob.content.caption || "", videoUrl: publishJob.content.videoUrl || undefined });
+      const result = await livePublish({ workspaceId: publishJob.content.workspaceId, platform: publishJob.platform, title: publishJob.content.title, caption: publishJob.content.caption || "", videoUrl: publishJob.content.videoUrl || "" });
       await prisma.$transaction([prisma.publishJob.update({ where: { id: publishJob.id }, data: { status: "PUBLISHED", externalId: result.externalId } }), prisma.content.update({ where: { id: publishJob.contentId }, data: { status: "PUBLISHED", publishedAt: new Date() } })]);
     } catch (error) {
       await prisma.publishJob.update({ where: { id: publishJob.id }, data: { status: "FAILED", lastError: error instanceof Error ? error.message : "Publish failed" } });
