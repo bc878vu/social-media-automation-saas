@@ -15,5 +15,18 @@ services:
     ports:
       - "6379:6379"
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/social_automation
+      REDIS_URL: redis://redis:6379
+      FFMPEG_BIN: ffmpeg
+      WORKER_INTERVAL_MS: 30000
+    depends_on:
+      - postgres
+      - redis
+
 volumes:
   postgres_data:
