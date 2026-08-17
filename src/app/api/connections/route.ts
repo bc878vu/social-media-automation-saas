@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { db } from "../../../lib/db";
 
 const schema = z.object({ workspaceId: z.string().min(1), platform: z.enum(["YOUTUBE","INSTAGRAM","FACEBOOK"]), accountName: z.string().min(1), accountId: z.string().min(1), accessToken: z.string().optional(), refreshToken: z.string().optional(), expiresAt: z.coerce.date().optional(), scopes: z.array(z.string()).default([]) });
 
