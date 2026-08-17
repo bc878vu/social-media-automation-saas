@@ -1,51 +1,61 @@
 # AutoPilot Social — Social Media Automation SaaS
 
-An automation-first SaaS for generating, producing, scheduling, publishing, and analyzing content across YouTube, Instagram, and Facebook Pages using official APIs.
+Automation-first SaaS for researching topics, generating content, producing media, scheduling and publishing to YouTube, Instagram and Facebook Pages through official APIs.
 
-## Built so far
-- Next.js + TypeScript dashboard
-- Automation setup and content queue UI
-- PostgreSQL + Prisma data model
-- Workspace, automation, content, connection, publish-job and audit-log APIs
-- Signed OAuth state with CSRF protection
-- YouTube OAuth code exchange + channel discovery
-- Meta OAuth code exchange + Facebook Page / Instagram account discovery
-- AES-256-GCM encrypted OAuth token storage
-- Live YouTube upload adapter
-- Live Facebook Page video adapter
-- Live Instagram Reels adapter
-- Durable scheduled publish worker with retries and audit logs
-- Mock adapters for development without credentials
-- PostgreSQL + Redis Docker stack
-- CI workflow
+## Production stack
+- Next.js + React + TypeScript
+- PostgreSQL + Prisma
+- Redis + BullMQ with database-worker fallback
+- S3/Cloudflare R2-compatible media storage
+- FFmpeg rendering worker
+- Secure cookie sessions + bcrypt password hashing
+- OAuth state/CSRF protection + encrypted platform tokens
+- OpenAI-compatible content generation adapter
+- ElevenLabs TTS adapter
+- Pexels licensed visual search adapter
+- NewsAPI + YouTube trend research adapters
+- Official YouTube / Meta publishing adapters
+- Scheduled cron fallback and durable publish queue
+- Analytics + trends data model
 
-## Production flow
-`Research → AI script → voice → visuals → video render → thumbnail/SEO → policy check → schedule → official API publish → analytics → optimization`
+## End-to-end pipeline
+`Trend research → topic selection → script → voice → visuals → subtitles → FFmpeg render → thumbnail/SEO → content database → scheduler → official API publish → analytics → optimization`
 
-## Important production requirements
-1. Configure official developer applications and OAuth credentials for each platform.
-2. Set `OAUTH_STATE_SECRET` and `TOKEN_ENCRYPTION_KEY` to long random server-side secrets.
-3. Use HTTPS and exact production OAuth redirect URIs.
-4. Configure durable object/media storage and a production PostgreSQL instance.
-5. Run the worker as a separate always-on process.
-6. Complete platform app review/permissions and verify current API versions/quotas before enabling public production publishing.
-7. Add an authenticated user/session layer before opening the SaaS to multiple customers. The current workspace API is intentionally a development-stage control plane.
+## What is real vs configurable
+The application contains real provider integrations and production boundaries, but third-party services require your own API credentials, approved OAuth apps, quotas and storage. Without credentials the system deliberately falls back to safe mock/deterministic generation instead of pretending that a post was published.
 
-## Run locally
+No social-media passwords are collected. Publishing uses official OAuth/API connections only.
+
+## Local setup
 ```bash
 npm install
 cp .env.example .env.local
+npm run db:generate
+docker compose up -d
+npm run db:push
 npm run dev
 ```
 
-For local infrastructure:
-```bash
-docker compose up -d
-npx prisma generate
-npx prisma db push
-```
+Open `http://localhost:3000/login` to create an account, then configure the workspace and platform connections.
 
-Open `http://localhost:3000` and `/connections` for platform setup.
+For the rendering worker, use the included `Dockerfile.worker` and run `npm run worker` in a persistent worker environment. Vercel can host the Next.js web/API layer; FFmpeg and long-running Redis workers should run separately.
 
-## Environment
-See `.env.example`.
+## Production environment
+Configure all required values in `.env.example`, especially:
+- `DATABASE_URL`, `REDIS_URL`
+- `TOKEN_ENCRYPTION_KEY`, `OAUTH_STATE_SECRET`, `CRON_SECRET`
+- AI/TTS/trend/visual provider keys
+- S3-compatible storage credentials
+- YouTube and Meta OAuth credentials
+
+Use exact production redirect URLs and HTTPS. Complete platform app review and verify current API permissions, quotas and publishing requirements before enabling public production publishing.
+
+## Security
+- Passwords are hashed with bcrypt.
+- Sessions use HTTP-only secure cookies.
+- OAuth state is signed and short-lived.
+- Platform tokens are encrypted at rest.
+- Workspace ownership is checked server-side for authenticated endpoints.
+- Scheduled jobs are idempotent and retried with bounded backoff.
+- Cron endpoint can be protected with `CRON_SECRET`.
+- No platform passwords are stored.
