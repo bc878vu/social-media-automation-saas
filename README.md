@@ -31,8 +31,6 @@ An automation-first SaaS for generating, producing, scheduling, publishing, and 
 6. Complete platform app review/permissions and verify current API versions/quotas before enabling public production publishing.
 7. Add an authenticated user/session layer before opening the SaaS to multiple customers. The current workspace API is intentionally a development-stage control plane.
 
-YouTube's current web-server OAuth guidance recommends the server-side OAuth flow, secure token storage, state validation, and the `youtube.upload` scope for video management. cite_placeholder
-
 ## Run locally
 ```bash
 npm install
