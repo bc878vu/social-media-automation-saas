@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { signOAuthState } from "@/lib/oauth-state";
-import { metaAuthUrl } from "@/lib/oauth";
-import { db } from "@/lib/db";
+import { signOAuthState } from "../../../../lib/oauth-state";
+import { metaAuthUrl } from "../../../../lib/oauth";
+import { db } from "../../../../lib/db";
 
 export async function GET(request: Request) {
   if (!process.env.META_APP_ID || !process.env.META_REDIRECT_URI || !process.env.OAUTH_STATE_SECRET) {
