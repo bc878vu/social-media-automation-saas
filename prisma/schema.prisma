@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Platform {
+  YOUTUBE
+  INSTAGRAM
+  FACEBOOK
+}
+
+enum AutomationStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+}
+
+enum ContentStatus {
+  IDEA
+  SCRIPTED
+  PRODUCING
+  READY
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+model Workspace {
+  id          String       @id @default(cuid())
+  name        String
+  niche       String
+  timezone    String       @default("Asia/Karachi")
+  autoApprove Boolean      @default(false)
+  automations Automation[]
+  contents    Content[]
+  connections Connection[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Automation {
+  id             String           @id @default(cuid())
+  workspaceId    String
+  name           String
+  niche          String
+  frequency      String           @default("daily")
+  postsPerDay    Int              @default(1)
+  platforms      Platform[]
+  status         AutomationStatus @default(ACTIVE)
+  publishHour    Int              @default(18)
+  workspace      Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contents       Content[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Content {
+  id            String        @id @default(cuid())
+  workspaceId   String
+  automationId  String?
+  title         String
+  topic         String
+  script        String?
+  caption       String?
+  hashtags      String[]
+  thumbnailUrl  String?
+  videoUrl      String?
+  status        ContentStatus @default(IDEA)
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  platformIds   Json?
+  errorMessage  String?
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  automation    Automation?  @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  jobs          PublishJob[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Connection {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  platform     Platform
+  accountName  String
+  accountId    String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  scopes       String[]
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([workspaceId, platform, accountId])
+}
+
+model PublishJob {
+  id          String   @id @default(cuid())
+  contentId   String
+  platform    Platform
+  status      String   @default("queued")
+  runAt       DateTime
+  attempts    Int      @default(0)
+  lastError   String?
+  externalId  String?
+  content     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, runAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+}
