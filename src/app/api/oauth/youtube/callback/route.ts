@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { encryptSecret } from "@/lib/crypto";
-import { verifyOAuthState } from "@/lib/oauth-state";
-import { exchangeYouTubeCode, getYouTubeChannel } from "@/lib/oauth-exchange";
+import { db } from "../../../../../lib/db";
+import { encryptSecret } from "../../../../../lib/crypto";
+import { verifyOAuthState } from "../../../../../lib/oauth-state";
+import { exchangeYouTubeCode, getYouTubeChannel } from "../../../../../lib/oauth-exchange";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
