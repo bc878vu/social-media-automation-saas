@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateContent } from "@/lib/ai";
+import { generateContent } from "../../../../../lib/ai";
 
 const schema = z.object({ topic: z.string().min(2).max(200) });
 
