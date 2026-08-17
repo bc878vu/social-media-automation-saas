@@ -1,5 +1,5 @@
-import { db } from "@/lib/db";
-import { livePublish } from "@/lib/live-publish";
+import { db } from "../lib/db";
+import { livePublish } from "../lib/live-publish";
 
 export async function processDueJobs(limit = 5) {
   const jobs = await db.publishJob.findMany({ where: { status: "queued", runAt: { lte: new Date() } }, orderBy: { runAt: "asc" }, take: limit, include: { content: true } });
