@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server";
+export async function GET() { return NextResponse.json({ ok: true, service: "social-media-automation-saas", time: new Date().toISOString() }); }
