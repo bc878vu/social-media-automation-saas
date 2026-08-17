@@ -7,39 +7,58 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Platform {
-  YOUTUBE
-  INSTAGRAM
-  FACEBOOK
+enum Platform { YOUTUBE INSTAGRAM FACEBOOK }
+enum AutomationStatus { ACTIVE PAUSED DRAFT }
+enum ContentStatus { IDEA SCRIPTED PRODUCING READY SCHEDULED PUBLISHED FAILED }
+enum JobStatus { QUEUED PROCESSING PUBLISHED FAILED }
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  sessions     Session[]
+  workspaces   WorkspaceMember[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
-enum AutomationStatus {
-  ACTIVE
-  PAUSED
-  DRAFT
-}
-
-enum ContentStatus {
-  IDEA
-  SCRIPTED
-  PRODUCING
-  READY
-  SCHEDULED
-  PUBLISHED
-  FAILED
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@index([userId, expiresAt])
 }
 
 model Workspace {
-  id          String       @id @default(cuid())
+  id          String             @id @default(cuid())
   name        String
   niche       String
-  timezone    String       @default("Asia/Karachi")
-  autoApprove Boolean      @default(false)
+  timezone    String             @default("Asia/Karachi")
+  autoApprove Boolean            @default(false)
+  members     WorkspaceMember[]
   automations Automation[]
   contents    Content[]
   connections Connection[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  trends      Trend[]
+  metrics     Metric[]
+  auditLogs   AuditLog[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String    @default("OWNER")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  @@unique([userId, workspaceId])
 }
 
 model Automation {
@@ -77,8 +96,26 @@ model Content {
   workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   automation    Automation?  @relation(fields: [automationId], references: [id], onDelete: SetNull)
   jobs          PublishJob[]
+  media        MediaAsset[]
+  metrics      Metric[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  @@index([workspaceId, status, scheduledAt])
+}
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  contentId   String
+  kind        String
+  url         String
+  storageKey  String?
+  mimeType    String?
+  width       Int?
+  height      Int?
+  durationSec Float?
+  content     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  @@index([contentId, kind])
 }
 
 model Connection {
@@ -94,24 +131,53 @@ model Connection {
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
   @@unique([workspaceId, platform, accountId])
 }
 
 model PublishJob {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   contentId   String
   platform    Platform
-  status      String   @default("queued")
+  status      JobStatus @default(QUEUED)
   runAt       DateTime
-  attempts    Int      @default(0)
+  attempts    Int       @default(0)
   lastError   String?
   externalId  String?
-  content     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  content     Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   @@index([status, runAt])
+}
+
+model Trend {
+  id          String   @id @default(cuid())
+  workspaceId String
+  source      String
+  title       String
+  url         String?
+  score       Float    @default(0)
+  keywords    String[]
+  publishedAt DateTime?
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  @@index([workspaceId, score])
+}
+
+model Metric {
+  id          String   @id @default(cuid())
+  workspaceId String
+  contentId   String?
+  platform    Platform
+  externalId  String?
+  views       Int      @default(0)
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  watchTime   Float    @default(0)
+  capturedAt  DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  content     Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  @@index([workspaceId, platform, capturedAt])
 }
 
 model AuditLog {
@@ -122,6 +188,6 @@ model AuditLog {
   entityId    String
   metadata    Json?
   createdAt   DateTime @default(now())
-
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   @@index([workspaceId, createdAt])
 }
