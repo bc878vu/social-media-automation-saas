@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { db } from "../../../lib/db";
 
 const schema = z.object({ name: z.string().min(2).max(80), niche: z.string().min(2).max(120), timezone: z.string().default("Asia/Karachi"), autoApprove: z.boolean().default(false) });
 
